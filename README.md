@@ -2,14 +2,13 @@
 
 A fully local **AI voice assistant** built with **RAG (Retrieval-Augmented Generation)** using Llama3, speech recognition, and text-to-speech.
 
-The assistant can take **text or voice input**, retrieve relevant knowledge from a vector database, generate an answer using Llama3, and speak the response automatically.
+The assistant can take **voice input**, retrieve relevant knowledge from a vector database, generate an answer using Llama3, and speak the response automatically.
 
 ---
 
 # Features
 
 * Voice input using microphone
-* Text input
 * Automatic speech transcription
 * Retrieval-Augmented Generation (RAG)
 * Hybrid document retrieval
@@ -37,7 +36,7 @@ The assistant can take **text or voice input**, retrieve relevant knowledge from
 
 # System Architecture
 
-User Input (Voice or Text)
+User Input (Voice)
 ↓
 Speech Recognition (Whisper)
 ↓
@@ -149,10 +148,6 @@ http://localhost:8501
 ---
 
 # Using the Assistant
-
-### Text Questions
-
-Type a question in the input box and submit.
 
 ### Voice Questions
 
