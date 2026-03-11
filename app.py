@@ -10,7 +10,7 @@ from rag_utils import answer_question, load_vector_store
 # Page Configuration
 # ======================================
 st.set_page_config(page_title="Llama3 RAG Voice Assistant", layout="wide")
-st.title("🧠 Llama3 RAG Voice Assistant")
+st.title(" Llama3 RAG Voice Assistant")
 
 
 # ======================================
@@ -51,50 +51,11 @@ def process_question(question: str):
 
     return answer
 
-
-# ======================================
-# TEXT INPUT
-# ======================================
-st.divider()
-st.subheader("✍️ Ask a Question (Text)")
-
-with st.form("text_form"):
-    user_text = st.text_area(
-        "Type your question",
-        placeholder="Ask anything..."
-    )
-
-    submit_text = st.form_submit_button("Ask")
-
-if submit_text and user_text.strip():
-
-    with st.spinner("🤖 Llama3 thinking..."):
-        answer = process_question(user_text)
-
-    st.markdown("### Answer")
-    st.write(answer)
-
-    audio_file = text_to_speech(answer)
-
-    with open(audio_file, "rb") as f:
-        audio_bytes = f.read()
-
-    b64 = base64.b64encode(audio_bytes).decode()
-
-    audio_html = f"""
-    <audio autoplay controls>
-        <source src="data:audio/wav;base64,{b64}" type="audio/wav">
-    </audio>
-    """
-
-    st.markdown(audio_html, unsafe_allow_html=True)
-
-
 # ======================================
 # MICROPHONE INPUT
 # ======================================
 st.divider()
-st.subheader("🎤 Ask a Question (Voice)")
+st.subheader("Ask a Question (Voice)")
 
 with st.form("mic_form"):
     audio_bytes = st.audio_input("Record your question")
@@ -107,13 +68,13 @@ if submit_mic and audio_bytes:
     with open(audio_path, "wb") as f:
         f.write(audio_bytes.getbuffer())
 
-    with st.spinner("🎧 Transcribing audio..."):
+    with st.spinner("Transcribing audio..."):
         spoken_text = speech_to_text_whisper(audio_path)
 
     st.success("Speech recognized")
     st.write("You said:", spoken_text)
 
-    with st.spinner("🤖 Llama3 thinking..."):
+    with st.spinner("Llama3 thinking..."):
         answer = process_question(spoken_text)
 
     st.markdown("### Answer")
@@ -139,7 +100,7 @@ if submit_mic and audio_bytes:
 # Conversation History
 # ======================================
 st.divider()
-st.subheader("💬 Conversation")
+st.subheader("Conversation")
 
 for msg in st.session_state.chat_history:
     role = msg["role"].capitalize()
