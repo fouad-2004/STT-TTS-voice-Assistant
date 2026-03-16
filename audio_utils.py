@@ -9,11 +9,9 @@ import subprocess
 from faster_whisper import WhisperModel
 from piper.voice import PiperVoice
 
-
 # =====================================
 # Paths
 # =====================================
-
 UPLOAD_DIR = Path("data/uploads")
 VOICE_PATH = Path("voices/voice.onnx")
 
@@ -29,11 +27,9 @@ piper_process = subprocess.Popen(
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE
 )
-
 # =====================================
 # Load Whisper Model (Speech → Text)
 # =====================================
-
 @st.cache_resource
 def load_whisper_model():
     return WhisperModel(
@@ -50,7 +46,6 @@ whisper_model = load_whisper_model()
 # =====================================
 # Load Piper Voice (Text → Speech)
 # =====================================
-
 @st.cache_resource
 def load_piper_voice():
     return PiperVoice.load(str(VOICE_PATH))
@@ -59,9 +54,9 @@ def load_piper_voice():
 piper_voice = load_piper_voice()
 
 
-# =====================================
+# ==================================
 # Speech → Text
-# =====================================
+# ==================================
 
 def speech_to_text_whisper(audio_path):
 
@@ -83,9 +78,9 @@ def speech_to_text_whisper(audio_path):
     return text.strip()
 
 
-# =====================================
+# ==================================
 # Text → Speech
-# =====================================
+# ==================================
 def text_to_speech(text):
 
     file_path = f"data/uploads/tts_{uuid.uuid4().hex}.wav"

@@ -158,8 +158,6 @@ def answer_question(vector_store, question, chat_history=None):
 
     history_text = build_history(chat_history)
 
-
-    # Fallback (no RAG database)
     if vector_store is None:
 
         prompt = f"""

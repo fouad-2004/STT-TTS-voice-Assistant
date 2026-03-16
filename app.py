@@ -107,3 +107,4 @@ for msg in st.session_state.chat_history:
     content = msg["content"]
 
     st.markdown(f"**{role}:** {content}")
+    
