@@ -13,6 +13,12 @@ venv/
 
 # Data folders
 data/uploads/
+data/documents/
+
+
+*.wav
+*.faiss
+
 
 # Models
 *.bin
