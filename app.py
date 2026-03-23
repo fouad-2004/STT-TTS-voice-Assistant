@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import base64
+import uuid
 
 from audio_utils import text_to_speech, speech_to_text_whisper
 from rag_utils import answer_question, load_vector_store
@@ -35,11 +36,7 @@ if "vector_store" not in st.session_state:
 # ======================================
 def process_question(question: str):
 
-    answer = answer_question(
-        vector_store=st.session_state.vector_store,
-        question=question,
-        chat_history=st.session_state.chat_history
-    )
+    answer = answer_question(question)
 
     st.session_state.chat_history.append(
         {"role": "user", "content": question}
@@ -58,15 +55,15 @@ st.divider()
 st.subheader("Ask a Question (Voice)")
 
 with st.form("mic_form"):
-    audio_bytes = st.audio_input("Record your question")
+    mic_audio = st.audio_input("Record your question")
     submit_mic = st.form_submit_button("Ask")
 
-if submit_mic and audio_bytes:
+if submit_mic and mic_audio:
 
     audio_path = os.path.join(UPLOAD_DIR, "mic_input.wav")
 
     with open(audio_path, "wb") as f:
-        f.write(audio_bytes.getbuffer())
+        f.write(mic_audio.getbuffer())
 
     with st.spinner("Transcribing audio..."):
         spoken_text = speech_to_text_whisper(audio_path)
@@ -83,18 +80,12 @@ if submit_mic and audio_bytes:
     audio_file = text_to_speech(answer)
 
     with open(audio_file, "rb") as f:
-        audio_bytes = f.read()
-
-    b64 = base64.b64encode(audio_bytes).decode()
-
-    audio_html = f"""
-    <audio autoplay controls>
-        <source src="data:audio/wav;base64,{b64}" type="audio/wav">
-    </audio>
-    """
-
-    st.markdown(audio_html, unsafe_allow_html=True)
-
+        st.session_state.last_audio = f.read()
+# ======================================
+# PLAY LAST AUDIO
+# ======================================
+if "last_audio" in st.session_state:
+    st.audio(st.session_state.last_audio, format="audio/wav", autoplay=True)
 
 # ======================================
 # Conversation History

@@ -1,194 +1,211 @@
-# AI RAG Voice Assistant
+#  Llama3 RAG Voice Assistant
 
-A fully local **AI voice assistant** built with **RAG (Retrieval-Augmented Generation)** using Llama3, speech recognition, and text-to-speech.
-
-The assistant can take **voice input**, retrieve relevant knowledge from a vector database, generate an answer using Llama3, and speak the response automatically.
+A **local AI voice assistant** that combines **RAG (Retrieval-Augmented Generation)** with **speech-to-text and text-to-speech**, allowing users to ask questions using voice and receive intelligent spoken answers.
 
 ---
 
-# Features
+##  Features
 
-* Voice input using microphone
-* Automatic speech transcription
-* Retrieval-Augmented Generation (RAG)
-* Hybrid document retrieval
-* Neural reranking
-* Local Llama3 inference
-* Automatic text-to-speech playback
-* Fully local (no external APIs)
+*  **Voice Input (Speech-to-Text)**
 
----
+  * Powered by `faster-whisper`
+  * Fast and fully local
 
-# Technologies Used
+*  **RAG (Retrieval-Augmented Generation)**
 
-| Component         | Technology        |
-| ----------------- | ----------------- |
-| Interface         | Streamlit         |
-| LLM               | Llama3 via Ollama |
-| Speech-to-Text    | Faster-Whisper    |
-| Text-to-Speech    | Piper             |
-| Vector Search     | FAISS             |
-| Embeddings        | BGE Embeddings    |
-| Keyword Retrieval | BM25              |
-| Reranking         | BGE Reranker      |
+  * Supports **PDF, Excel, and CSV files**
+  * Hybrid retrieval:
 
----
+    * FAISS (semantic search)
+    * BM25 (keyword search)
+  * Reranking with CrossEncoder for better accuracy
 
-# System Architecture
+*  **LLM (Llama3 via Ollama)**
 
-User Input (Voice)
-↓
-Speech Recognition (Whisper)
-↓
-Hybrid Retrieval
-• Vector Search (FAISS)
-• Keyword Search (BM25)
-↓
-Neural Reranking
-↓
-Context Selection
-↓
-Llama3 Response Generation
-↓
-Text-to-Speech (Piper)
-↓
-Automatic Audio Playback
+  * Answers questions using:
+
+    * Your uploaded documents
+    * General knowledge when needed
+
+*  **Text-to-Speech (TTS)**
+
+  * Powered by `Piper`
+  * Fully local and fast
+  * Auto-plays responses
+
+*  **Conversation Memory**
+
+  * Keeps chat history during session
 
 ---
 
-# Project Structure
+##  How It Works
 
 ```
-AI_RAG_Chatbot_Project
-│
-├── app.py
-├── rag_utils.py
-├── audio_utils.py
-├── requirements.txt
-│
-├── data
-│   └── uploads
-│
-└── voices
-    ├── voice.onnx
-    └── voice.onnx.json
+User Voice
+   ↓
+Whisper (Speech → Text)
+   ↓
+Hybrid RAG Retrieval (FAISS + BM25)
+   ↓
+Reranker (BGE CrossEncoder)
+   ↓
+Llama3 (Ollama)
+   ↓
+Answer
+   ↓
+Piper (Text → Speech)
 ```
 
 ---
 
-# Installation
+##  Supported File Types
 
-## 1. Clone the repository
+Place your documents inside:
 
 ```
-git clone <repository-url>
-cd AI_RAG_Chatbot_Project
+data/documents/
+```
+
+Supported formats:
+
+* `.pdf`
+* `.xlsx`
+* `.csv`
+
+---
+
+##  Smart Data Handling
+
+* Large datasets are optimized by:
+
+  * Selecting important columns
+  * Limiting rows for performance
+* Automatically adapts to different file structures
+
+---
+
+##  Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/fouad-2004/STT-TTS-voice-Assistant.git
+cd STT-TTS-voice-Assistant
 ```
 
 ---
 
-## 2. Create virtual environment
+### 2. Create virtual environment
 
-```
+```bash
 python -m venv venv
-```
-
-Activate it.
-
-Windows:
-
-```
 venv\Scripts\activate
 ```
 
 ---
 
-## 3. Install dependencies
+### 3. Install dependencies
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## 4. Install Ollama
+##  Install Ollama & Llama3
 
-Download from:
+### Install Ollama:
 
-https://ollama.com
+https://ollama.com/
 
-Then install the Llama3 model:
+### Pull Llama3:
 
-```
+```bash
 ollama pull llama3
 ```
 
-Start the Ollama server:
+---
+
+##  Install Piper (TTS)
+
+Download a voice model and place it in:
 
 ```
-ollama serve
+voices/voice.onnx
+voices/voice.onnx.json
 ```
 
 ---
 
-# Running the Application
+##  Run the App
 
-Start the Streamlit interface:
-
-```
+```bash
 streamlit run app.py
 ```
 
-Open the browser:
+---
 
+##  Example Questions
+
+* "What is machine learning?"
+* "Which ship is closest to the port of Los Angeles?"
+* "What cargo is vessel X carrying?"
+* "Summarize the uploaded PDF"
+
+---
+
+##  Configuration
+
+### LLM settings (in `rag_utils.py`):
+
+```python
+temperature = 0.0  # deterministic answers
 ```
-http://localhost:8501
-```
 
 ---
 
-# Using the Assistant
+##  Performance Tips
 
-### Voice Questions
-
-Record audio using the microphone.
-
-The system will:
-
-1. Transcribe speech
-2. Retrieve relevant documents
-3. Generate an answer
-4. Speak the response automatically
+* Keep datasets under **50MB** for best performance
+* Use column filtering for large CSV/Excel files
+* First run may take longer (vector DB creation)
 
 ---
 
-# Performance
+##  Tech Stack
 
-Typical response time on a local machine:
-
-| Component          | Time    |
-| ------------------ | ------- |
-| Speech recognition | ~0.5 s  |
-| RAG retrieval      | ~0.05 s |
-| Llama3 generation  | ~1-2 s  |
-| Text-to-speech     | ~0.3 s  |
-
-Total response time:
-
-~2 seconds.
+* **Frontend:** Streamlit
+* **LLM:** Llama3 (Ollama)
+* **Embeddings:** BGE (HuggingFace)
+* **Vector DB:** FAISS
+* **Keyword Search:** BM25
+* **Reranker:** CrossEncoder (BGE)
+* **STT:** faster-whisper
+* **TTS:** Piper
 
 ---
 
-# Future Improvements
+##  Known Limitations
 
-Possible extensions include:
-
-* multi-document knowledge bases
-* GPU acceleration for speech models
-* improved conversation memory
+* Very large datasets may slow down indexing
+* Analytical queries (e.g., "closest", "largest") rely on LLM reasoning
+* GPU support may vary depending on hardware
 
 ---
 
-# License
+##  Future Improvements
 
-This project is intended for educational and research purposes.
+*  Smart tool usage (auto calculations)
+*  Real-time streaming voice responses
+
+##  Project Highlights
+
+* Fully **local AI assistant**
+* Combines **RAG + Voice + LLM**
+* Production-style architecture
+* Real-world AI system design
+
+##  License
+
+This project is for educational purposes.
