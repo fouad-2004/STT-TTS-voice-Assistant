@@ -1,16 +1,22 @@
 import os
 import streamlit as st
-from langchain_community.vectorstores import FAISS
+import pandas as pd
+
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import DataFrameLoader
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+
 from langchain_ollama import ChatOllama
-from sentence_transformers import CrossEncoder
-
-from rank_bm25 import BM25Okapi
 
 
-# ======================================
+# =====================================
 # Load Embeddings
-# ======================================
+# =====================================
+
 @st.cache_resource
 def load_embeddings():
     return HuggingFaceEmbeddings(
@@ -19,198 +25,121 @@ def load_embeddings():
     )
 
 
-# ======================================
-# Load Vector Store
-# ======================================
+# =====================================
+# Load Documents (PDF + Excel)
+# =====================================
+
+def load_documents():
+
+    docs = []
+    folder = "data/documents"
+
+    if not os.path.exists(folder):
+        return docs
+
+    for file in os.listdir(folder):
+
+        path = os.path.join(folder, file)
+
+        # PDF files
+        if file.endswith(".pdf"):
+            loader = PyPDFLoader(path)
+            docs.extend(loader.load())
+
+        # Excel files
+        elif file.endswith(".xlsx"):
+            df = pd.read_excel(path)
+
+            # convert rows to documents
+            loader = DataFrameLoader(df, page_content_column=df.columns[0])
+            docs.extend(loader.load())
+
+    return docs
+
+
+# =====================================
+# Split Documents into Chunks
+# =====================================
+
+def split_documents(docs):
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
+    )
+
+    return splitter.split_documents(docs)
+
+
+# =====================================
+# Load / Create Vector Store
+# =====================================
+
 @st.cache_resource
 def load_vector_store():
 
     embeddings = load_embeddings()
-
     vector_path = "data/vector_store"
 
+    # Load existing vector DB
     if os.path.exists(vector_path):
-
-        vector_store = FAISS.load_local(
+        return FAISS.load_local(
             vector_path,
             embeddings,
             allow_dangerous_deserialization=True
         )
 
-        return vector_store
+    # Create new vector DB
+    docs = load_documents()
+    chunks = split_documents(docs)
 
-    return None
+    vector_store = FAISS.from_documents(chunks, embeddings)
 
+    vector_store.save_local(vector_path)
 
-# ======================================
-# Load LLM (Llama3)
-# ======================================
-def load_llm():
-
-    llm = ChatOllama(
-        model="llama3",
-        temperature=0.2,
-        num_predict=300
-    )
-
-    return llm
+    return vector_store
 
 
-# ======================================
-# Load Reranker
-# ======================================
+# =====================================
+# Load LLM (Llama3 via Ollama)
+# =====================================
+
 @st.cache_resource
-def load_reranker():
-    return CrossEncoder("BAAI/bge-reranker-base")
-
-reranker = load_reranker()
-
-
-# ======================================
-# Build Chat History
-# ======================================
-def build_history(chat_history):
-
-    if not chat_history:
-        return ""
-
-    history = "\n".join(
-        f"{msg['role'].capitalize()}: {msg['content']}"
-        for msg in chat_history[-4:]
+def load_llm():
+    return ChatOllama(
+        model="llama3",
+        temperature=0.2
     )
 
-    return history
 
+# =====================================
+# Answer Question (RAG)
+# =====================================
 
-# ======================================
-# Hybrid Retrieval (Vector + BM25)
-# ======================================
-def hybrid_retrieval(vector_store, question):
+def answer_question(query):
 
-    # Vector search
-    vector_docs = vector_store.max_marginal_relevance_search(
-        question,
-        k=6,
-        fetch_k=12
-    )
-
-    # Prepare BM25
-    corpus = [doc.page_content for doc in vector_docs]
-
-    tokenized_corpus = [doc.split() for doc in corpus]
-
-    bm25 = BM25Okapi(tokenized_corpus)
-
-    tokenized_query = question.split()
-
-    bm25_scores = bm25.get_scores(tokenized_query)
-
-    ranked = sorted(
-        zip(bm25_scores, vector_docs),
-        key=lambda x: x[0],
-        reverse=True
-    )
-
-    docs = [doc for score, doc in ranked]
-
-    return docs
-
-
-# ======================================
-# Rerank Documents
-# ======================================
-def rerank_documents(question, docs):
-
-    pairs = [(question, doc.page_content) for doc in docs]
-
-    scores = reranker.predict(pairs)
-
-    ranked = sorted(
-        zip(scores, docs),
-        key=lambda x: x[0],
-        reverse=True
-    )
-
-    top_docs = [doc for score, doc in ranked[:4]]
-
-    return top_docs
-
-
-# ======================================
-# Build Context
-# ======================================
-def build_context(docs):
-
-    context = "\n\n".join(
-        f"Document {i+1}:\n{doc.page_content}"
-        for i, doc in enumerate(docs)
-    )
-
-    return context
-
-
-# ======================================
-# Main RAG Function
-# ======================================
-def answer_question(vector_store, question, chat_history=None):
-
+    vector_store = load_vector_store()
     llm = load_llm()
 
-    history_text = build_history(chat_history)
-
-    if vector_store is None:
-
-        prompt = f"""
-You are a helpful AI assistant.
-
-Conversation history:
-{history_text}
-
-User question:
-{question}
-
-Answer clearly and concisely.
-"""
-
-        response = llm.invoke(prompt)
-
-        return response.content if hasattr(response, "content") else str(response)
-
-
-    # Hybrid retrieval
-    docs = hybrid_retrieval(vector_store, question)
-
-
-    # Neural reranking
-    docs = rerank_documents(question, docs)
-
+    # Retrieve relevant docs
+    docs = vector_store.similarity_search(query, k=5)
 
     # Build context
-    context = build_context(docs)
+    context = "\n\n".join([doc.page_content for doc in docs])
 
-
-    # RAG prompt
+    # Prompt
     prompt = f"""
-You are a knowledgeable assistant.
-
-Use ONLY the provided context to answer the question.
-
-If the answer is not contained in the context,
-say the information was not found in the documents.
-
-Conversation history:
-{history_text}
+You are an AI assistant. Answer the question using ONLY the context below.
 
 Context:
 {context}
 
 Question:
-{question}
+{query}
 
-Provide a clear and concise answer.
+Answer:
 """
-
 
     response = llm.invoke(prompt)
 
-    return response.content if hasattr(response, "content") else str(response)
+    return response.content
